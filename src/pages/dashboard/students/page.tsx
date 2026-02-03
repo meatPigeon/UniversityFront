@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, Plus, MoreHorizontal, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Loader2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,191 +9,158 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useStudents } from "@/hooks";
+import { useStudents } from "@/hooks/useStudents";
+import type { Course } from "@/api/types";
+import { useAuth } from "@/contexts/AuthContext";
+// import type { Student } from "@/api/types"; // Implicitly available via useStudents result if needed
 
 export function StudentsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const { students, isLoading, error } = useStudents();
+  const { user } = useAuth();
+  const [studentId, setStudentId] = useState("");
+  const [courses, setCourses] = useState<Course[]>([]);
 
-  const filteredStudents = students.filter(
-    (student) =>
-      `${student.firstname} ${student.surname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.group_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.major.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const {
+    student,
+    isLoading,
+    error,
+    getStudent,
+    getStudentCourses,
+    getMyCourses
+  } = useStudents();
 
-  const getInitials = (firstname: string, surname: string) => {
-    return `${firstname[0] || ""}${surname[0] || ""}`.toUpperCase();
+  useEffect(() => {
+    if (user?.role === 'student') {
+      getMyCourses().then(setCourses).catch(console.error);
+    }
+  }, [user, getMyCourses]);
+
+  const handleSearch = async () => {
+    if (!studentId) return;
+    try {
+      await getStudent(parseInt(studentId));
+      const studentCourses = await getStudentCourses(parseInt(studentId));
+      setCourses(studentCourses);
+    } catch {
+      // Error is handled in hook
+      setCourses([]);
+    }
   };
 
-  const uniqueGroups = [...new Set(students.map((s) => s.group_name))];
-
-  if (isLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="text-center">
-          <p className="text-destructive">{error}</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Make sure the backend server is running
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Students</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Find Student</h1>
           <p className="text-muted-foreground">
-            Manage and view all registered students
+            Search for a student by their ID to view details and courses
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Student
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{students.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all groups
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Groups</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{uniqueGroups.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Active groups
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Majors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {[...new Set(students.map((s) => s.major))].length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Different majors
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Student Directory</CardTitle>
+          <CardTitle>Search Student</CardTitle>
           <CardDescription>
-            A list of all students with their contact information and status
+            Enter the Student ID to retrieve information
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search students..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          <div className="flex w-full max-w-sm items-center space-x-2">
+            <Input
+              type="number"
+              placeholder="Student ID"
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+            <Button onClick={handleSearch} disabled={isLoading || !studentId}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              <span className="ml-2">Search</span>
+            </Button>
           </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Major</TableHead>
-                <TableHead>Course Year</TableHead>
-                <TableHead>Gender</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStudents.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No students found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(student.firstname, student.surname)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">
-                            {student.firstname} {student.surname}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            ID: {student.id}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{student.group_name}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{student.major}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">Year {student.course_year}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm capitalize">{student.gender}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          {error && <p className="text-destructive mt-2">{error}</p>}
         </CardContent>
       </Card>
+
+      {student && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Profile</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 mb-6">
+                <Avatar className="h-20 w-20 rounded-md border border-border">
+                  <AvatarFallback className="text-2xl rounded-md bg-muted text-foreground font-bold">
+                    {getInitials(student.student_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-2xl font-bold">{student.student_name}</h2>
+                  <p className="text-muted-foreground">ID: {student.student_id}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Gender</p>
+                    <p className="capitalize">{student.gender}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Birth Date</p>
+                    <p>{new Date(student.birth_date).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Enrolled Courses</CardTitle>
+              <CardDescription>
+                Courses currently assigned to this student
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {courses.length === 0 ? (
+                <p className="text-muted-foreground">No courses found for this student.</p>
+              ) : (
+                <div className="space-y-4">
+                  {courses.map((course) => (
+                    <div
+                      key={course.course_id}
+                      className="flex items-start justify-between rounded-lg border p-4"
+                    >
+                      <div className="space-y-1">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          {course.name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {course.department} • {course.credits} Credits
+                        </p>
+                        <p className="text-xs text-muted-foreground">{course.description}</p>
+                      </div>
+                      <Badge variant="secondary">Active</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

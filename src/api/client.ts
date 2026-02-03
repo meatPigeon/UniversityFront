@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8083";
 
 class ApiError extends Error {
   status: number;
@@ -61,6 +61,12 @@ export const apiClient = {
   patch: <T>(endpoint: string, data?: unknown) =>
     request<T>(endpoint, {
       method: "PATCH",
+      body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  put: <T>(endpoint: string, data?: unknown) =>
+    request<T>(endpoint, {
+      method: "PUT",
       body: data ? JSON.stringify(data) : undefined,
     }),
 

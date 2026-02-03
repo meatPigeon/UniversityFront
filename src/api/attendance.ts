@@ -1,26 +1,16 @@
 import { apiClient } from "./client";
 import type {
   Attendance,
-  CreateAttendanceDto,
-  UpdateAttendanceDto,
+  RecordVisitDto,
 } from "./types";
 
 export const attendanceApi = {
-  getAll: () => apiClient.get<Attendance[]>("/attendance"),
+  recordVisit: (data: RecordVisitDto) =>
+    apiClient.post<Attendance>("/api/attendance/class", data),
 
-  getById: (id: number) => apiClient.get<Attendance>(`/attendance/${id}`),
+  getByClass: (classId: number) =>
+    apiClient.get<Attendance[]>(`/attendance/class/${classId}`),
 
-  getByStudentId: (studentId: number) =>
+  getByStudent: (studentId: number) =>
     apiClient.get<Attendance[]>(`/attendance/student/${studentId}`),
-
-  getBySubjectId: (subjectId: number) =>
-    apiClient.get<Attendance[]>(`/attendance/subject/${subjectId}`),
-
-  create: (data: CreateAttendanceDto) =>
-    apiClient.post<Attendance>("/attendance", data),
-
-  update: (id: number, data: UpdateAttendanceDto) =>
-    apiClient.patch<Attendance>(`/attendance/${id}`, data),
-
-  delete: (id: number) => apiClient.delete<void>(`/attendance/${id}`),
 };

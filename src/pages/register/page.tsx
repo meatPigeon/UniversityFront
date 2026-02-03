@@ -55,28 +55,28 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-              <GraduationCap className="h-8 w-8 text-primary-foreground" />
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md rounded-lg shadow-sm border-border/50">
+        <CardHeader className="space-y-2 text-center pb-2">
+          <div className="mb-2 flex justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <GraduationCap className="h-6 w-6" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>
-            Enter your details to create a new account
+          <CardTitle className="text-xl font-bold tracking-tight">Create Account</CardTitle>
+          <CardDescription className="text-xs uppercase tracking-wider text-muted-foreground/80">
+            Student Registration
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-sm bg-destructive/10 p-3 text-sm font-medium text-destructive border border-destructive/20">
                 {error}
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-xs font-semibold uppercase text-muted-foreground">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -84,10 +84,11 @@ export function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-9 rounded-md"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-xs font-semibold uppercase text-muted-foreground">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -95,10 +96,11 @@ export function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="h-9 rounded-md"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-xs font-semibold uppercase text-muted-foreground">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -106,20 +108,21 @@ export function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                className="h-9 rounded-md"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create account"}
+          <CardFooter className="flex flex-col space-y-4 pt-2">
+            <Button type="submit" className="w-full rounded-md h-9 font-medium" disabled={isLoading}>
+              {isLoading ? "Creating Account..." : "Register"}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-xs text-muted-foreground">
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="font-medium text-primary hover:underline"
+                className="font-semibold text-primary hover:underline hover:text-primary/80"
               >
-                Sign in
+                Sign In
               </Link>
             </p>
           </CardFooter>

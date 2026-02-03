@@ -1,6 +1,9 @@
 export { apiClient, ApiError } from "./client";
-export { authApi } from "./auth";
-export { studentsApi } from "./students";
-export { schedulesApi } from "./schedules";
-export { attendanceApi } from "./attendance";
+export * from "./auth";
+export * from "./students";
+export * from "./schedules";
+export * from "./attendance";
+export * from "./courses";
+export * from "./teachers";
+export * from "./admin"; // Export adminApi
 export * from "./types";

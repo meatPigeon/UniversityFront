@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  schedulesApi,
-  type GroupSchedule,
-  type CreateGroupScheduleDto,
-  type UpdateGroupScheduleDto,
-} from "@/api";
+import { schedulesApi, type ClassSchedule } from "@/api";
 
 export function useSchedules() {
-  const [schedules, setSchedules] = useState<GroupSchedule[]>([]);
+  const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,6 +14,7 @@ export function useSchedules() {
       setSchedules(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch schedules");
+      setSchedules([]);
     } finally {
       setIsLoading(false);
     }
@@ -28,37 +24,25 @@ export function useSchedules() {
     fetchSchedules();
   }, [fetchSchedules]);
 
-  const getByGroupName = async (groupName: string) => {
-    return schedulesApi.getByGroupName(groupName);
-  };
-
-  const createSchedule = async (data: CreateGroupScheduleDto) => {
-    const newSchedule = await schedulesApi.create(data);
-    setSchedules((prev) => [...prev, newSchedule]);
-    return newSchedule;
-  };
-
-  const updateSchedule = async (id: number, data: UpdateGroupScheduleDto) => {
-    const updated = await schedulesApi.update(id, data);
-    setSchedules((prev) =>
-      prev.map((schedule) => (schedule.id === id ? updated : schedule))
-    );
-    return updated;
-  };
-
-  const deleteSchedule = async (id: number) => {
-    await schedulesApi.delete(id);
-    setSchedules((prev) => prev.filter((schedule) => schedule.id !== id));
-  };
+  const getStudentSchedule = useCallback(async (id: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await schedulesApi.getStudentSchedule(id);
+      setSchedules(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch student schedule");
+      setSchedules([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return {
     schedules,
     isLoading,
     error,
     refetch: fetchSchedules,
-    getByGroupName,
-    createSchedule,
-    updateSchedule,
-    deleteSchedule,
+    getStudentSchedule,
   };
 }

@@ -1,54 +1,62 @@
-import { useState, useEffect, useCallback } from "react";
-import { studentsApi, type Student, type CreateStudentDto, type UpdateStudentDto } from "@/api";
+import { useState, useCallback } from "react";
+import { studentsApi, type Student } from "@/api";
 
 export function useStudents() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStudents = useCallback(async () => {
+  const getStudent = useCallback(async (id: number) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await studentsApi.getAll();
-      setStudents(data);
+      const data = await studentsApi.getById(id);
+      setStudent(data);
+      return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch students");
+      const message = err instanceof Error ? err.message : "Failed to fetch student";
+      setError(message);
+      setStudent(null);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents]);
+  const getStudentCourses = useCallback(async (id: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      return await studentsApi.getCourses(id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to fetch courses";
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const createStudent = async (data: CreateStudentDto) => {
-    const newStudent = await studentsApi.create(data);
-    setStudents((prev) => [...prev, newStudent]);
-    return newStudent;
-  };
-
-  const updateStudent = async (id: number, data: UpdateStudentDto) => {
-    const updated = await studentsApi.update(id, data);
-    setStudents((prev) =>
-      prev.map((student) => (student.id === id ? updated : student))
-    );
-    return updated;
-  };
-
-  const deleteStudent = async (id: number) => {
-    await studentsApi.delete(id);
-    setStudents((prev) => prev.filter((student) => student.id !== id));
-  };
+  const getMyCourses = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      return await studentsApi.getMyCourses();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to fetch courses";
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return {
-    students,
+    student,
     isLoading,
     error,
-    refetch: fetchStudents,
-    createStudent,
-    updateStudent,
-    deleteStudent,
+    getStudent,
+    getStudentCourses,
+    getMyCourses,
   };
 }

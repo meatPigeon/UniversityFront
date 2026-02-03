@@ -1,16 +1,12 @@
 import { apiClient } from "./client";
-import type { Student, CreateStudentDto, UpdateStudentDto } from "./types";
+import type { Student, Course } from "./types";
 
 export const studentsApi = {
-  getAll: () => apiClient.get<Student[]>("/students"),
+  getById: (id: number) => apiClient.get<Student>(`/student/${id}`),
 
-  getById: (id: number) => apiClient.get<Student>(`/students/${id}`),
+  // Public/Admin or Teacher view of a student's courses
+  getCourses: (id: number) => apiClient.get<Course[]>(`/student/${id}/courses`),
 
-  create: (data: CreateStudentDto) =>
-    apiClient.post<Student>("/students", data),
-
-  update: (id: number, data: UpdateStudentDto) =>
-    apiClient.patch<Student>(`/students/${id}`, data),
-
-  delete: (id: number) => apiClient.delete<void>(`/students/${id}`),
+  // Logged-in student's own courses
+  getMyCourses: () => apiClient.get<Course[]>("/api/student/courses"),
 };

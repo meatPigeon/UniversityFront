@@ -6,11 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { authApi } from "@/api";
-
-interface User {
-  id: number;
-  email: string;
-}
+import type { User } from "@/api/types";
 
 interface AuthContextType {
   user: User | null;
@@ -28,38 +24,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const userData = await authApi.me();
+          // Map UserResponse to User if needed, or if they are the same
+          // UserResponse: user_id, email, role
+          // User: user_id, email, role
+          // They match exactly based on my update to types.ts
+          setUser(userData as unknown as User);
+        } catch (error) {
+          console.error("Failed to fetch user profile", error);
+          localStorage.removeItem("token");
+        }
+      }
+      setIsLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
-    const userData: User = {
-      id: response.user.id,
-      email: response.user.email,
-    };
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", response.access_token);
+    localStorage.setItem("token", response.token);
+
+    // If response includes user, use it. Otherwise fetch me.
+    if (response.user) {
+      setUser(response.user as unknown as User);
+    } else {
+      const userData = await authApi.me();
+      setUser(userData as unknown as User);
+    }
   };
 
   const register = async (email: string, password: string) => {
     const response = await authApi.register({ email, password });
-    const userData: User = {
-      id: response.user.id,
-      email: response.user.email,
-    };
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", response.access_token);
+    localStorage.setItem("token", response.token);
+
+    if (response.user) {
+      setUser(response.user as unknown as User);
+    } else {
+      const userData = await authApi.me();
+      setUser(userData as unknown as User);
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("user");
     localStorage.removeItem("token");
   };
 
