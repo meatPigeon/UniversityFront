@@ -9,6 +9,10 @@ import { AddStudentPage } from "./pages/dashboard/students/add/page";
 import { CoursesPage } from "./pages/dashboard/courses/page";
 import { TeachersPage } from "./pages/dashboard/teachers/page";
 import { AdminPage } from "./pages/dashboard/admin/page";
+import { ProfilePage } from "./pages/dashboard/profile/page";
+import { StudentAttendancePage } from "./pages/dashboard/attendance/student/page";
+import { RoleIndexRedirect } from "./components/routes/RoleIndexRedirect";
+import { RequireRole } from "./components/routes/RequireRole";
 
 const router = createBrowserRouter([
   {
@@ -29,15 +33,23 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/dashboard/students" replace />,
+        element: <RoleIndexRedirect />,
       },
       {
         path: "students",
         element: <StudentsPage />,
       },
       {
+        path: "profile",
+        element: <ProfilePage />,
+      },
+      {
         path: "students/add",
-        element: <AddStudentPage />,
+        element: (
+          <RequireRole roles={["admin"]}>
+            <AddStudentPage />
+          </RequireRole>
+        ),
       },
       {
         path: "schedules",
@@ -45,7 +57,15 @@ const router = createBrowserRouter([
       },
       {
         path: "attendance",
-        element: <AttendancePage />,
+        element: (
+          <RequireRole roles={["admin", "teacher"]}>
+            <AttendancePage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "attendance/student",
+        element: <StudentAttendancePage />,
       },
       {
         path: "courses",
@@ -57,7 +77,11 @@ const router = createBrowserRouter([
       },
       {
         path: "admin",
-        element: <AdminPage />,
+        element: (
+          <RequireRole roles={["admin"]}>
+            <AdminPage />
+          </RequireRole>
+        ),
       },
     ],
   },

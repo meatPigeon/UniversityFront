@@ -12,6 +12,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { adminApi } from "@/api/admin";
+import { getErrorMessage } from "@/lib/errors";
 // import { useAuth } from "@/contexts/AuthContext";
 // import { useNavigate } from "react-router";
 
@@ -65,8 +66,8 @@ function CreateStudentForm() {
             });
             setMessage("Student created successfully!");
             (e.target as HTMLFormElement).reset();
-        } catch (err: any) {
-            setMessage("Error: " + err.message);
+        } catch (err: unknown) {
+            setMessage("Error: " + getErrorMessage(err, "Failed to create student"));
         } finally {
             setLoading(false);
         }
@@ -135,8 +136,8 @@ function CreateTeacherForm() {
             });
             setMessage("Teacher created successfully!");
             (e.target as HTMLFormElement).reset();
-        } catch (err: any) {
-            setMessage("Error: " + err.message);
+        } catch (err: unknown) {
+            setMessage("Error: " + getErrorMessage(err, "Failed to create teacher"));
         } finally {
             setLoading(false);
         }
@@ -194,8 +195,8 @@ function CreateCourseForm() {
             });
             setMessage("Course created successfully!");
             (e.target as HTMLFormElement).reset();
-        } catch (err: any) {
-            setMessage("Error: " + err.message);
+        } catch (err: unknown) {
+            setMessage("Error: " + getErrorMessage(err, "Failed to create course"));
         } finally {
             setLoading(false);
         }

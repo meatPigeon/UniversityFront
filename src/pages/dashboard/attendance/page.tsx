@@ -69,6 +69,7 @@ export function AttendancePage() {
                 placeholder="Class ID"
                 value={classId}
                 onChange={(e) => setClassId(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
               <Button onClick={handleSearch} disabled={isLoading || !classId}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}

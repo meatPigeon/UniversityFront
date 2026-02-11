@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Mail, Users, Search, Loader2 } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Dialog,
     DialogContent,
@@ -14,7 +15,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import type { Teacher, ClassSchedule, Student, Course } from "@/api/types";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { schedulesApi, teachersApi, coursesApi } from "@/api";
 
 export function TeachersPage() {
@@ -25,6 +26,14 @@ export function TeachersPage() {
     const [searchedTeacher, setSearchedTeacher] = useState<Teacher | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Directory State
+    const [tab, setTab] = useState("all");
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [allLoading, setAllLoading] = useState(false);
+    const [allError, setAllError] = useState<string | null>(null);
+    const [hasLoadedAll, setHasLoadedAll] = useState(false);
+    const [filter, setFilter] = useState("");
 
     // Teacher View State
     const [myCourses, setMyCourses] = useState<{ course: Course, schedule: ClassSchedule[] }[]>([]);
@@ -41,13 +50,30 @@ export function TeachersPage() {
         try {
             const data = await teachersApi.getById(parseInt(searchId));
             setSearchedTeacher(data);
-        } catch (e) {
+        } catch {
             setSearchedTeacher(null);
             setError("Teacher not found");
         } finally {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (viewMode === 'directory' && tab === "all" && !hasLoadedAll) {
+            setAllLoading(true);
+            setAllError(null);
+            teachersApi.getAll()
+                .then((data) => {
+                    setTeachers(data);
+                    setHasLoadedAll(true);
+                })
+                .catch((e) => {
+                    setTeachers([]);
+                    setAllError(e instanceof Error ? e.message : "Failed to fetch teachers");
+                })
+                .finally(() => setAllLoading(false));
+        }
+    }, [viewMode, tab, hasLoadedAll]);
 
     // Load Teacher's Own Classes
     useEffect(() => {
@@ -96,6 +122,15 @@ export function TeachersPage() {
     }, [selectedCourseId]);
 
     const getInitials = (name: string) => name.split(" ").map(n => n[0]).join("").toUpperCase();
+    const filteredTeachers = useMemo(() => {
+        if (!filter.trim()) return teachers;
+        const term = filter.trim().toLowerCase();
+        return teachers.filter((entry) =>
+            `${entry.teacher_id} ${entry.full_name} ${entry.email} ${entry.department}`
+                .toLowerCase()
+                .includes(term)
+        );
+    }, [teachers, filter]);
 
     // Teacher Dashboard View
     if (user?.role === 'teacher' && viewMode === 'my-classes') {
@@ -174,38 +209,108 @@ export function TeachersPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Find Teacher</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Teachers</h1>
                     <p className="text-muted-foreground">
-                        Search for a teacher by their ID
+                        Browse all teachers or search by ID
                     </p>
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Search Teacher</CardTitle>
-                    <CardDescription>
-                        Enter Teacher ID to view details
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex w-full max-w-sm items-center space-x-2">
-                        <Input
-                            type="number"
-                            placeholder="Teacher ID"
-                            value={searchId}
-                            onChange={(e) => setSearchId(e.target.value)}
-                        />
-                        <Button onClick={handleSearch} disabled={isLoading || !searchId}>
-                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                            <span className="ml-2">Search</span>
-                        </Button>
-                    </div>
-                    {error && <p className="text-destructive mt-2">{error}</p>}
-                </CardContent>
-            </Card>
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+                    <TabsTrigger value="all">All Teachers</TabsTrigger>
+                    <TabsTrigger value="search">Find Teacher</TabsTrigger>
+                </TabsList>
 
-            {searchedTeacher && (
+                <TabsContent value="all" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Teacher Directory</CardTitle>
+                            <CardDescription>
+                                Browse all registered teachers
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="mb-4 flex w-full max-w-sm items-center space-x-2">
+                                <Input
+                                    placeholder="Filter by name, email, department, or ID"
+                                    value={filter}
+                                    onChange={(e) => setFilter(e.target.value)}
+                                />
+                            </div>
+                            {allLoading && teachers.length === 0 ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                </div>
+                            ) : (
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    {filteredTeachers.map((teacher) => (
+                                        <Card key={teacher.teacher_id} className="border-border/60">
+                                            <CardHeader className="flex flex-row items-center gap-4">
+                                                <Avatar className="h-12 w-12 rounded-md border">
+                                                    <AvatarFallback className="rounded-md bg-muted text-base font-bold">
+                                                        {getInitials(teacher.full_name)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <CardTitle className="text-lg">{teacher.full_name}</CardTitle>
+                                                    <CardDescription>{teacher.department}</CardDescription>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-2">
+                                                <div className="flex items-center text-muted-foreground text-sm">
+                                                    <Mail className="h-4 w-4 mr-2" />
+                                                    {teacher.email}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    ID: {teacher.teacher_id}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                    {filteredTeachers.length === 0 && !allLoading && (
+                                        <div className="col-span-full text-center text-muted-foreground py-8">
+                                            No teachers match your filter.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {allError && teachers.length === 0 && (
+                                <p className="text-destructive mt-2">{allError}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="search" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Search Teacher</CardTitle>
+                            <CardDescription>
+                                Enter Teacher ID to view details
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex w-full max-w-sm items-center space-x-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Teacher ID"
+                                    value={searchId}
+                                    onChange={(e) => setSearchId(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                                />
+                                <Button onClick={handleSearch} disabled={isLoading || !searchId}>
+                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                    <span className="ml-2">Search</span>
+                                </Button>
+                            </div>
+                            {error && <p className="text-destructive mt-2">{error}</p>}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+            {tab === "search" && searchedTeacher && (
                 <Card>
                     <CardHeader className="flex flex-row items-center gap-4">
                         <Avatar className="h-20 w-20 rounded-md border">

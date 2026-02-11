@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { GraduationCap } from "lucide-react";
+import { getDashboardPathByRole } from "@/lib/routes";
 
 export function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -21,11 +22,11 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { register, isAuthenticated } = useAuth();
+  const { register, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard/students" replace />;
+    return <Navigate to={getDashboardPathByRole(user)} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,8 +46,8 @@ export function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(email, password);
-      navigate("/dashboard/students");
+      const nextUser = await register(email, password);
+      navigate(getDashboardPathByRole(nextUser));
     } catch {
       setError("Registration failed. Please try again.");
     } finally {

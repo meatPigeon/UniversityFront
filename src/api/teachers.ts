@@ -2,6 +2,8 @@ import { apiClient } from "./client";
 import type { Teacher, Student } from "./types";
 
 export const teachersApi = {
+  getAll: () => apiClient.get<Teacher[]>("/teachers"),
+
   // Public view
   getById: (id: number) => apiClient.get<Teacher>(`/api/teacher/${id}`),
 

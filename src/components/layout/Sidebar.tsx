@@ -6,8 +6,10 @@ import {
   LogOut,
   GraduationCap,
   BookOpen,
+  UserCircle,
+  ClipboardList,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -17,31 +19,49 @@ const navItems = [
     title: "Students",
     href: "/dashboard/students",
     icon: Users,
+    roles: ["admin", "teacher", "student"],
+  },
+  {
+    title: "My Profile",
+    href: "/dashboard/profile",
+    icon: UserCircle,
+    roles: ["admin", "teacher", "student"],
   },
   {
     title: "Class Schedules",
     href: "/dashboard/schedules",
     icon: Calendar,
+    roles: ["admin", "teacher", "student"],
   },
   {
     title: "Attendance",
     href: "/dashboard/attendance",
     icon: ClipboardCheck,
+    roles: ["admin", "teacher"],
+  },
+  {
+    title: "Student Attendance",
+    href: "/dashboard/attendance/student",
+    icon: ClipboardList,
+    roles: ["admin", "teacher", "student"],
   },
   {
     title: "Available Courses",
     href: "/dashboard/courses",
     icon: BookOpen,
+    roles: ["admin", "teacher", "student"],
   },
   {
     title: "Faculty",
     href: "/dashboard/teachers",
     icon: Users,
+    roles: ["admin", "teacher", "student"],
   },
   {
     title: "Admin",
     href: "/dashboard/admin",
     icon: ClipboardCheck, // Reusing icon for now
+    roles: ["admin"],
   },
 ];
 
@@ -59,6 +79,8 @@ export function Sidebar() {
     return name.slice(0, 2).toUpperCase();
   };
 
+  const role = user?.role ?? "student";
+
   return (
     <aside className="flex h-screen w-64 flex-col border-r bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
@@ -69,23 +91,25 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-0.5 p-4">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.href}
-            to={item.href}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )
-            }
-          >
-            <item.icon className="h-4 w-4" />
-            {item.title}
-          </NavLink>
-        ))}
+        {navItems
+          .filter((item) => item.roles.includes(role))
+          .map((item) => (
+            <NavLink
+              key={item.href}
+              to={item.href}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                )
+              }
+            >
+              <item.icon className="h-4 w-4" />
+              {item.title}
+            </NavLink>
+          ))}
       </nav>
 
       <div className="border-t border-sidebar-border p-4">

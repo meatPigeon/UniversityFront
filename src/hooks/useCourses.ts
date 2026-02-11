@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { coursesApi } from "@/api/courses";
 import { adminApi } from "@/api/admin";
 import type { Course, CreateCourseDto, UpdateCourseDto } from "@/api/types";
+import { getErrorMessage } from "@/lib/errors";
 
 export function useCourses() {
     const [courses, setCourses] = useState<Course[]>([]);
@@ -14,8 +15,8 @@ export function useCourses() {
         try {
             const data = await coursesApi.getAll();
             setCourses(data);
-        } catch (err: any) {
-            setError(err.message || "Failed to fetch courses");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, "Failed to fetch courses"));
         } finally {
             setIsLoading(false);
         }
@@ -26,8 +27,8 @@ export function useCourses() {
         try {
             await adminApi.createCourse(data);
             await getAllCourses(); // Refresh list
-        } catch (err: any) {
-            setError(err.message || "Failed to create course");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, "Failed to create course"));
             throw err;
         } finally {
             setIsLoading(false);
@@ -39,8 +40,8 @@ export function useCourses() {
         try {
             await adminApi.updateCourse(id, data);
             await getAllCourses(); // Refresh list
-        } catch (err: any) {
-            setError(err.message || "Failed to update course");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, "Failed to update course"));
             throw err;
         } finally {
             setIsLoading(false);
@@ -52,8 +53,8 @@ export function useCourses() {
         try {
             await adminApi.deleteCourse(id);
             await getAllCourses(); // Refresh list
-        } catch (err: any) {
-            setError(err.message || "Failed to delete course");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, "Failed to delete course"));
             throw err;
         } finally {
             setIsLoading(false);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { GraduationCap } from "lucide-react";
+import { getDashboardPathByRole } from "@/lib/routes";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -20,11 +21,11 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard/students" replace />;
+    return <Navigate to={getDashboardPathByRole(user)} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,8 +34,8 @@ export function LoginPage() {
     setError("");
 
     try {
-      await login(email, password);
-      navigate("/dashboard/students");
+      const nextUser = await login(email, password);
+      navigate(getDashboardPathByRole(nextUser));
     } catch {
       setError("Invalid email or password");
     } finally {

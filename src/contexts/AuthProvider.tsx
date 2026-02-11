@@ -1,23 +1,7 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { authApi } from "@/api";
 import type { User } from "@/api/types";
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -29,10 +13,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token) {
         try {
           const userData = await authApi.me();
-          // Map UserResponse to User if needed, or if they are the same
-          // UserResponse: user_id, email, role
-          // User: user_id, email, role
-          // They match exactly based on my update to types.ts
           setUser(userData as unknown as User);
         } catch (error) {
           console.error("Failed to fetch user profile", error);
@@ -48,13 +28,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await authApi.login({ email, password });
     localStorage.setItem("token", response.token);
 
-    // If response includes user, use it. Otherwise fetch me.
     if (response.user) {
-      setUser(response.user as unknown as User);
-    } else {
-      const userData = await authApi.me();
-      setUser(userData as unknown as User);
+      const nextUser = response.user as unknown as User;
+      setUser(nextUser);
+      return nextUser;
     }
+
+    const userData = await authApi.me();
+    const nextUser = userData as unknown as User;
+    setUser(nextUser);
+    return nextUser;
   };
 
   const register = async (email: string, password: string) => {
@@ -62,11 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("token", response.token);
 
     if (response.user) {
-      setUser(response.user as unknown as User);
-    } else {
-      const userData = await authApi.me();
-      setUser(userData as unknown as User);
+      const nextUser = response.user as unknown as User;
+      setUser(nextUser);
+      return nextUser;
     }
+
+    const userData = await authApi.me();
+    const nextUser = userData as unknown as User;
+    setUser(nextUser);
+    return nextUser;
   };
 
   const logout = () => {
@@ -88,12 +75,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 }

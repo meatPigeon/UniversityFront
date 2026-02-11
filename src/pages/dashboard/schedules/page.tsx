@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useSchedules } from "@/hooks/useSchedules";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { useEffect } from "react";
 
 export function SchedulesPage() {

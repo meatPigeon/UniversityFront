@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, BookOpen } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth-context";
 import { useCourses } from "@/hooks/useCourses";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,10 +36,11 @@ import type { CreateCourseDto, UpdateCourseDto, Course } from "@/api/types";
 
 export function CoursesPage() {
     const { user } = useAuth();
-    const { courses, isLoading, createCourse, updateCourse, deleteCourse } = useCourses();
+    const { courses, isLoading, error, createCourse, updateCourse, deleteCourse } = useCourses();
     const [isAdmin] = useState(user?.role === "admin");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+    const [filter, setFilter] = useState("");
 
     // Form State
     const [formData, setFormData] = useState<CreateCourseDto>({
@@ -94,6 +95,16 @@ export function CoursesPage() {
             await deleteCourse(id);
         }
     };
+
+    const filteredCourses = useMemo(() => {
+        if (!filter.trim()) return courses;
+        const term = filter.trim().toLowerCase();
+        return courses.filter((course) =>
+            `${course.course_id} ${course.name} ${course.department} ${course.description}`
+                .toLowerCase()
+                .includes(term)
+        );
+    }, [courses, filter]);
 
     return (
         <div className="space-y-6">
@@ -169,6 +180,11 @@ export function CoursesPage() {
                     </Dialog>
                 )}
             </div>
+            {error && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {error}
+                </div>
+            )}
 
             <Tabs defaultValue="available" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
@@ -177,33 +193,46 @@ export function CoursesPage() {
                 </TabsList>
 
                 <TabsContent value="available" className="mt-6">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {courses.map((course) => (
-                            <Card key={course.course_id} className="flex flex-col">
-                                <CardHeader>
-                                    <div className="flex justify-between items-start">
-                                        <Badge variant="outline" className="mb-2">{course.department}</Badge>
-                                        <Badge variant="secondary" className="ml-2">{course.credits} Credits</Badge>
-                                    </div>
-                                    <CardTitle className="line-clamp-2">{course.name}</CardTitle>
-                                    <CardDescription className="line-clamp-3 mt-2">
-                                        {course.description || "No description provided."}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardFooter className="mt-auto pt-4 border-t">
-                                    <div className="flex w-full items-center text-sm text-muted-foreground">
-                                        <BookOpen className="h-4 w-4 mr-2" />
-                                        Course ID: {course.course_id}
-                                    </div>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                        {courses.length === 0 && !isLoading && (
-                            <div className="col-span-full text-center py-12 text-muted-foreground">
-                                No courses available.
-                            </div>
-                        )}
+                    <div className="mb-4 flex w-full max-w-sm items-center space-x-2">
+                        <Input
+                            placeholder="Filter by name, department, or ID"
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                        />
                     </div>
+                    {isLoading && courses.length === 0 ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                        </div>
+                    ) : (
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {filteredCourses.map((course) => (
+                                <Card key={course.course_id} className="flex flex-col">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start">
+                                            <Badge variant="outline" className="mb-2">{course.department}</Badge>
+                                            <Badge variant="secondary" className="ml-2">{course.credits} Credits</Badge>
+                                        </div>
+                                        <CardTitle className="line-clamp-2">{course.name}</CardTitle>
+                                        <CardDescription className="line-clamp-3 mt-2">
+                                            {course.description || "No description provided."}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardFooter className="mt-auto pt-4 border-t">
+                                        <div className="flex w-full items-center text-sm text-muted-foreground">
+                                            <BookOpen className="h-4 w-4 mr-2" />
+                                            Course ID: {course.course_id}
+                                        </div>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                            {filteredCourses.length === 0 && !isLoading && (
+                                <div className="col-span-full text-center py-12 text-muted-foreground">
+                                    No courses match your filter.
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </TabsContent>
 
                 {isAdmin && (
